@@ -1,11 +1,13 @@
 const rules = {
     api_read: {
-        capacity: 100,          // max tokens in bucket
-        refillRate: 100,        // tokens added
-        refillInterval: 60      // per 60 seconds
+        id: "api_read",
+        capacity: 100,
+        refillRate: 100,
+        refillInterval: 60
     },
 
     api_write: {
+        id: "api_write",
         capacity: 20,
         refillRate: 20,
         refillInterval: 60
