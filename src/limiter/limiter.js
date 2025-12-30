@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const redis = require('../redis');
-const rules = require('../rules/rules');
 
 // Read Lua script
 const luaScript = fs.readFileSync(path.join(__dirname, 'tokenBucket.lua'), 'utf8');
@@ -14,19 +13,18 @@ redis.defineCommand('acquireToken', {
 
 /**
  * Checks if a request is allowed against the rate limit.
- * @param {string} identifier - Unique identifier for the user/client (e.g. IP, API key)
- * @param {string} ruleName - Name of the rule to apply
+ * @param {object} params
+ * @param {string} params.clientId - Unique identifier for the user/client
+ * @param {object} params.rule - Rule object containing id, capacity, refillRate, refillInterval
  * @returns {Promise<{allowed: boolean, remaining: number}>}
  */
-async function check(identifier, ruleName = 'api_read') {
-    const rule = rules[ruleName];
-
+async function checkRateLimit({ clientId, rule }) {
     if (!rule) {
-        throw new Error(`Rule "${ruleName}" not found`);
+        throw new Error("Rule object is required");
     }
 
     // Construct a namespaced key: rate:{ruleId}:{clientId}
-    const key = `rate:${rule.id}:${identifier}`;
+    const key = `rate:${rule.id}:${clientId}`;
 
     const now = Math.floor(Date.now() / 1000); // current time in seconds
 
@@ -51,4 +49,4 @@ async function check(identifier, ruleName = 'api_read') {
     };
 }
 
-module.exports = { check };
+module.exports = { checkRateLimit };
