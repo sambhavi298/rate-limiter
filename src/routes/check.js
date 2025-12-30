@@ -7,7 +7,7 @@ const limiter = require('../limiter/limiter');
 router.post('/', async (req, res) => {
     try {
         const userId = req.body.user_id || req.ip;
-        const ruleName = req.body.rule || 'default';
+        const ruleName = req.body.rule || 'api_read';
 
         const result = await limiter.check(userId, ruleName);
 

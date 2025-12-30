@@ -18,25 +18,29 @@ redis.defineCommand('acquireToken', {
  * @param {string} ruleName - Name of the rule to apply
  * @returns {Promise<{allowed: boolean, remaining: number}>}
  */
-async function check(identifier, ruleName = 'default') {
-    const rule = rules[ruleName] || rules.default;
+async function check(identifier, ruleName = 'api_read') {
+    const rule = rules[ruleName];
+
     if (!rule) {
-        throw new Error(`Rule ${ruleName} not found`);
+        throw new Error(`Rule "${ruleName}" not found`);
     }
 
-    // Construct a namespaced key
-    const key = `ratelimit:${ruleName}:${identifier}`;
+    // Construct a namespaced key: rate:{ruleId}:{clientId}
+    const key = `rate:${rule.id}:${identifier}`;
 
-    const now = Date.now() / 1000; // current time in seconds
-    const requested = 1; // cost of one request
+    const now = Math.floor(Date.now() / 1000); // current time in seconds
 
     // Execute Lua script
+    // ARGV[1] = capacity
+    // ARGV[2] = refill_rate
+    // ARGV[3] = refill_interval (seconds)
+    // ARGV[4] = current_timestamp (seconds)
     const result = await redis.acquireToken(
         key,
         rule.capacity,
-        rule.rate,
-        now,
-        requested
+        rule.refillRate,
+        rule.refillInterval,
+        now
     );
 
     const [allowed, remaining] = result;
