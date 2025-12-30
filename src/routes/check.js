@@ -1,31 +1,48 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const limiter = require('../limiter/limiter');
 
-// POST /check
-// Body: { "user_id": "...", "rule": "default" }
-router.post('/', async (req, res) => {
+const rules = require("../rules/rules");
+const { checkRateLimit } = require("../limiter/limiter");
+
+router.post("/", async (req, res) => {
+    const { client_id, rule_id } = req.body;
+
+    if (!client_id || !rule_id) {
+        return res.status(400).json({
+            error: "client_id and rule_id are required"
+        });
+    }
+
+    const rule = rules[rule_id];
+    if (!rule) {
+        return res.status(400).json({
+            error: "unknown rule_id"
+        });
+    }
+
     try {
-        const userId = req.body.user_id || req.ip;
-        const ruleName = req.body.rule || 'api_read';
+        const result = await checkRateLimit({
+            clientId: client_id,
+            rule
+        });
 
-        const result = await limiter.check(userId, ruleName);
-
-        if (result.allowed) {
-            res.json({
-                allowed: true,
+        if (!result.allowed) {
+            return res.status(429).json({
+                allowed: false,
                 remaining: result.remaining
             });
-        } else {
-            res.status(429).json({
-                allowed: false,
-                remaining: result.remaining,
-                error: "Too Many Requests"
-            });
         }
-    } catch (error) {
-        console.error('Rate limit check failed:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+
+        return res.json({
+            allowed: true,
+            remaining: result.remaining
+        });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            error: "rate limiter failure"
+        });
     }
 });
 
