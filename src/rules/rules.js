@@ -1,12 +1,15 @@
-module.exports = {
-    // Default rule: 10 requests burst, 1 request per second refill
-    default: {
-        capacity: 10,
-        rate: 1,
+const rules = {
+    api_read: {
+        capacity: 100,          // max tokens in bucket
+        refillRate: 100,        // tokens added
+        refillInterval: 60      // per 60 seconds
     },
-    // API specific rule example
-    api_v1: {
-        capacity: 50,
-        rate: 5,
+
+    api_write: {
+        capacity: 20,
+        refillRate: 20,
+        refillInterval: 60
     }
 };
+
+module.exports = rules;
